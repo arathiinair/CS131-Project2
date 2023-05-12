@@ -1,0 +1,12 @@
+1. static typing
+    save types to variables
+    check on field initialization
+    argument parameters
+    return types
+
+2. environment
+    use a stack of environments
+    push a new environment onto the stack when you enter a new scope (like a let)
+    iterate through the stack from newest to oldest when looking for a variable to get its value
+    this method implicitly takes care of shadowing for you
+    pop the environment off the stack when you leave its scope

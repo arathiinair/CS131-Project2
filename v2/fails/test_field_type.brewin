@@ -1,0 +1,11 @@
+(class main
+(field int x "hello")
+ (method void foo ()
+   (begin 
+     (print x)
+   )
+ )
+ (method void main ()
+   (call me foo)
+ )
+)

@@ -3,10 +3,10 @@ The module that brings it all together! We intentionally keep this as small as p
 delegating functionality to various modules.
 """
 
-from classv1 import ClassDef
+from classv2 import ClassDef
 from intbase import InterpreterBase, ErrorType
 from bparser import BParser
-from objectv1 import ObjectDef
+from objectv2 import ObjectDef
 
 
 class Interpreter(InterpreterBase):
@@ -30,6 +30,7 @@ class Interpreter(InterpreterBase):
             super().error(
                 ErrorType.SYNTAX_ERROR, f"Parse error on program: {parsed_program}"
             )
+        print(parsed_program)
         self.__map_class_names_to_class_defs(parsed_program)
 
         # instantiate main class
@@ -73,4 +74,19 @@ class Interpreter(InterpreterBase):
                         f"Duplicate class name {item[1]}",
                         item[0].line_num,
                     )
-                self.class_index[item[1]] = ClassDef(item, self)
+                if isinstance(item[2], list):   # no inheritance
+                    self.class_index[item[1]] = ClassDef(item, self, None)
+                    print(f"NO INHERITANCE {item[1]}")
+                elif item[2] == InterpreterBase.INHERITS_DEF:
+                    print(f"STUDENT {item[3]}")
+                    if item[3] not in self.class_index:
+                        # inheriting from a class that doesn't exist
+                        super().error(
+                            ErrorType.NAME_ERROR,
+                            f"Base class {item[3]} does not exist",
+                            item[0].line_num,
+                        )
+                    else:
+                        parent = self.class_index[item[3]]
+                        self.class_index[item[1]] = ClassDef(
+                            item, self, parent)

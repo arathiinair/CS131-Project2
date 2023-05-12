@@ -53,3 +53,15 @@ def create_value(val):
     if val == InterpreterBase.NOTHING_DEF:
         return Value(Type.NOTHING, None)
     return None
+
+def check_type(value_type, variable_type):
+    if value_type == Type.BOOL and variable_type == InterpreterBase.BOOL_DEF:
+        return True
+    elif value_type == Type.STRING and variable_type == InterpreterBase.STRING_DEF:
+        return True
+    elif value_type == Type.INT and variable_type == InterpreterBase.INT_DEF:
+        return True
+    else:
+        return False
+    # ADD CLASS TYPE CHECKING
+        

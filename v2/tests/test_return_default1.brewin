@@ -1,0 +1,12 @@
+(class main
+ (method int i () (return))
+ (method string s ((string hey) (string hi)) (return))
+ (method bool b () (return))
+ (method void main ()
+   (begin
+      (print (call me i))
+      (print (call me s "boo" "kah"))
+      (print (call me b))
+   )
+ )
+)

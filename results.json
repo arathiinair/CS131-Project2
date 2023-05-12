@@ -1,0 +1,10 @@
+{
+    "tests": [
+        {
+            "name": "Correctness | test_inher1",
+            "score": 1,
+            "max_score": 1,
+            "visibility": "visible"
+        }
+    ]
+}
