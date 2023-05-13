@@ -20,12 +20,21 @@ class EnvironmentManager:
         Get data associated with variable name.
         """
         if symbol in self.environment:
-            return self.environment[symbol]
+            return self.environment[symbol][0]
 
         return None
 
-    def set(self, symbol, value):
+    def get_type(self, symbol):
+        """
+        Get type associated with variable name.
+        """
+        if symbol in self.environment:
+            return self.environment[symbol][1]
+
+        return None
+
+    def set(self, symbol, value, symbol_type):
         """
         Set data associated with a variable name.
         """
-        self.environment[symbol] = value
+        self.environment[symbol] = (value, symbol_type)

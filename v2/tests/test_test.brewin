@@ -1,0 +1,12 @@
+(class main
+(field main i null)
+ (method void main ()
+   (begin
+      (set i (new main))
+      (call i hi)
+   )
+ )
+ (method void hi ()
+    (print "HI")
+ )
+)

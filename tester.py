@@ -184,20 +184,26 @@ def generate_test_suite_v2():
         [
             # "test_compare_null",
             # "test_return_default1",
-            # "test_ret"
-            # "test_fields"
+            # "test_ret",
+            # "test_fields",
             # "test_inher2",
-            "test_inher1",
+            # "test_inherit",
+            # "test_inher1",
             # "test_let",
-            # "test_basic"
+            # "test_return",
+            # "test_basic",
+            # "test_test",
+            # "test_set"
         ],
         [
             # "test_incompat_return1",
             # "test_let2",
             # "test_inher1",
-            # "test_incompat_types2"
-            # "test_field_type"
-            # "test_arg_types"
+            # "test_incompat_types2",
+            # "test_field_type",
+            # "test_arg_types",
+            # "test_access_fields",
+            # "test_set"
         ],
     )
 

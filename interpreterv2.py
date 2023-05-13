@@ -59,6 +59,7 @@ class Interpreter(InterpreterBase):
                 line_num_of_statement,
             )
         class_def = self.class_index[class_name]
+        print(f"CLASS NAME {class_def.name}")
         obj = ObjectDef(
             self, class_def, self.trace_output
         )  # Create an object based on this class definition
@@ -74,7 +75,8 @@ class Interpreter(InterpreterBase):
                         f"Duplicate class name {item[1]}",
                         item[0].line_num,
                     )
-                if isinstance(item[2], list):   # no inheritance
+                # no inheritance
+                if isinstance(item[2], list) and item[2] != InterpreterBase.INHERITS_DEF:
                     self.class_index[item[1]] = ClassDef(item, self, None)
                     print(f"NO INHERITANCE {item[1]}")
                 elif item[2] == InterpreterBase.INHERITS_DEF:
@@ -88,5 +90,6 @@ class Interpreter(InterpreterBase):
                         )
                     else:
                         parent = self.class_index[item[3]]
+                        print(f"INHERITING PARENT CLASS {item[3]}")
                         self.class_index[item[1]] = ClassDef(
                             item, self, parent)

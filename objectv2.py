@@ -20,6 +20,14 @@ class ObjectDef:
         self.interpreter = interpreter
         # take class body from 3rd+ list elements, e.g., ["class",classname", [classbody]]
         self.class_def = class_def
+        print(f"MY CLASS DEFINITION {self.class_def.name}")
+        if self.class_def.parent:
+            self.parent = ObjectDef(
+                self.interpreter, self.interpreter.class_index[self.class_def.parent.name], self.interpreter.trace_output)
+            print(
+                f"HI IM A {self.class_def.name} AND THIS IS MY PARENT {self.parent.class_def.name}")
+        else:
+            self.parent = None
         self.trace_output = trace_output
         self.__map_fields_to_values()
         self.__map_method_names_to_method_definitions()
@@ -33,47 +41,39 @@ class ObjectDef:
         The caller passes in the line number so we can properly generate an error message.
         The error is then generated at the source (i.e., where the call is initiated).
         """
-        # print("METHOD NAMES")
-        # for method in self.methods.keys():
-        #     print(method)
+        print("METHOD NAMES")
+        for method in self.methods.keys():
+            print(method)
 
-        # if method_name in self.methods:
-        #     method_info = self.methods[method_name]
-        # else:
         method_info = None
-        for ancestor in self.class_def.get_ancestors():
-            print(f"ANCESTOR {ancestor.name}")
-            if method_name in ancestor.get_methods():
-                method_def = ancestor.get_methods()[method_name]
-                if self.__check_method_def(method_def, actual_params):
-                    method_info = method_def
-                    break
-        if not method_info:  # throw this error when you've gone through all the ancestors and the method has still not been found
+        # for ancestor in self.class_def.get_ancestors():
+        #     print(f"ANCESTOR {ancestor.name}")
+        #     if method_name in ancestor.get_methods():
+        #         method_def = ancestor.get_methods()[method_name]
+        #         if self.__check_method_def(method_def, actual_params):
+        #             method_info = method_def
+        #             break
+        if method_name in self.methods:
+            method_def = self.methods[method_name]
+            if self.__check_method_def(method_def, actual_params):
+                method_info = method_def
+        elif self.parent:
+            print(
+                f"CHECKING PARENT OF {self.class_def.name} ({self.parent.class_def.name}) FOR {method_name}")
+            return self.parent.call_method(method_name, actual_params, line_num_of_caller)
+        if not method_info:  # throw this error when you've gone through all the parents and the method has not been found
             self.interpreter.error(
                 ErrorType.NAME_ERROR,
                 "unknown method " + method_name,
                 line_num_of_caller,
             )
 
-        # if len(actual_params) != len(method_info.formal_params):
-        #     self.interpreter.error(
-        #         ErrorType.TYPE_ERROR,
-        #         "invalid number of parameters in call to " + method_name,
-        #         line_num_of_caller,
-        #     )
         env = (
             EnvironmentManager()
         )  # maintains lexical environment for function; just params for now
         for (formal_var, formal_type), actual in zip(list(method_info.formal_params.items()), actual_params):
-            # if check_type(actual.type(), formal_type):
-            # don't think i need to type check bc we've already done it
-            env.set(formal_var, actual)
-            # else:
-            #     self.interpreter.error(
-            #         ErrorType.NAME_ERROR,
-            #         "invalid parameter types for " + method_name,
-            #         line_num_of_caller,
-            #     )
+            # don't think i need to type check bc we've already done it in check method def function
+            env.set(formal_var, actual, formal_type)
         return_type = method_info.return_type
         # since each method has a single top-level statement, execute it.
         status, return_value = self.__execute_statement(
@@ -83,7 +83,8 @@ class ObjectDef:
         if status == ObjectDef.STATUS_RETURN:
             return return_value
         # The method didn't explicitly return a value, so return the default value of the function's return type
-        print("HELP", self.__get_default_return(return_type))
+        print("RETURNING THIS VALUE OBJECT",
+              self.__get_default_return(return_type).value())
         return self.__get_default_return(return_type)
 
     def __execute_statement(self, env, code, return_type):
@@ -193,21 +194,81 @@ class ObjectDef:
     # helper method used to set either parameter variables or member fields; parameters currently shadow
     # member fields
     def __set_variable_aux(self, env, var_name, value, line_num):
+        print(f"SETTING VARIABLE AUX WITH {value.type()}")
         # parameter shadows fields
         if value.type() == Type.NOTHING:
             self.interpreter.error(
                 ErrorType.TYPE_ERROR, "can't assign to nothing " + var_name, line_num
             )
         param_val = env.get(var_name)
-        if param_val is not None:
-            env.set(var_name, value)
+        if param_val is not None:   # the variable is a parameter to the function
+            print(f"FOUND PARAM {var_name} {value.value()}")
+            var_type = env.get_type(var_name)
+            if value.value() is None:   # assigning a variable to None
+                print(
+                    f"-1. TRYING TO ASSIGN {var_type} {var_name} TO {value.type()} {value.value()}")
+                if var_type != InterpreterBase.INT_DEF and var_type != InterpreterBase.STRING_DEF and var_type != InterpreterBase.BOOL_DEF:
+                    # can assign none to class types
+                    self.fields[var_name] = (value, field_type)
+                else:
+                    self.interpreter.error(
+                        ErrorType.TYPE_ERROR, f"can't assign primitive type {var_name} to null", line_num
+                    )
+            elif value.type() == Type.CLASS:
+                val_class = value.value().class_def.name
+                print(
+                    f"-2. TRYING TO ASSIGN {var_name} TO {val_class}")
+                if val_class == var_type:   # CHANGE THIS TO DEAL WITH POLYMORPHISM
+                    env.set(var_name, value, var_type)
+                else:
+                    self.interpreter.error(
+                        ErrorType.TYPE_ERROR, f"assigning {var_name} to a class variable of the wrong type", line_num
+                    )
+            elif check_type(value.type(), var_type):
+                env.set(var_name, value, var_type)
+            else:
+                print(
+                    f"-3. TRYING TO ASSIGN {var_type} {var_name} TO {value.type()} {value.value()}")
+                self.interpreter.error(
+                    ErrorType.TYPE_ERROR, f"assigning {var_name} to a value of the wrong type", line_num
+                )
             return
 
         if var_name not in self.fields:
             self.interpreter.error(
                 ErrorType.NAME_ERROR, "unknown variable " + var_name, line_num
             )
-        self.fields[var_name] = value
+        print(f"SETTING FIELD TO NEW VALUE {var_name} {value.value()}")
+        field_type = self.fields[var_name][1]
+        if value.value() is None:
+            print(
+                f"1. TRYING TO ASSIGN {field_type} {var_name} TO {value.type()} {value.value()}")
+            if field_type != InterpreterBase.INT_DEF and field_type != InterpreterBase.STRING_DEF and field_type != InterpreterBase.BOOL_DEF:
+                self.fields[var_name] = (value, field_type)
+            else:
+                self.interpreter.error(
+                    ErrorType.TYPE_ERROR, f"can't assign primitive type {var_name} to null", line_num
+                )
+        elif value.type() == Type.CLASS:
+            val_class = value.value().class_def.name
+            print(
+                f"2. TRYING TO ASSIGN {var_name} TO {val_class}")
+            # CHANGE THIS TO DEAL WITH POLYMORPHISM
+            if val_class == field_type:
+                # THIS ONLY DEALS WITH OBJECTS OF THE SAME CLASS NOT DERIVED CLASSES
+                self.fields[var_name] = (value, field_type)
+            else:
+                self.interpreter.error(
+                    ErrorType.TYPE_ERROR, f"assigning {var_name} to a class variable of the wrong type", line_num
+                )
+        elif check_type(value.type(), field_type):
+            self.fields[var_name] = (value, field_type)
+        else:
+            print(
+                f"3. TRYING TO ASSIGN {field_type} {var_name} TO {value.type()} {value.value()}")
+            self.interpreter.error(
+                ErrorType.TYPE_ERROR, f"assigning {var_name} to a value of the wrong type", line_num
+            )
 
     # (if expression (statement) (statement) ) where expresion could be a boolean constant (e.g., true), member
     # variable without ()s, or a boolean expression in parens, like (> 5 a)
@@ -262,11 +323,12 @@ class ObjectDef:
         if not isinstance(expr, list):
             # locals shadow member variables
             val = env.get(expr)
-            if val is not None:
+            if val is not None:  # if parameter to function
                 print("HEY VAL", val.value())
                 return val
-            if expr in self.fields:
-                return self.fields[expr]
+            if expr in self.fields:  # if it's a field
+                print(f"GET FIELD {self.fields[expr][0].value()}")
+                return self.fields[expr][0]
             # need to check for variable name and get its value too
             value = create_value(expr)
             if value is not None:
@@ -314,7 +376,11 @@ class ObjectDef:
                         "invalid operator applied to class",
                         line_num_of_statement,
                     )
-                return self.binary_ops[Type.CLASS][operator](operand1, operand2)
+                if operand1.value() is None or operand2.value() is None or operand1.class_name() == operand2.class_name():
+                    print(
+                        f"OPERAND CLASSES {operand1.class_name()} {operand2.class_name()}")
+                    # if either operand is null or both of of the same type (CHANGE THIS TO INCLUDE POLYMORPHISM)
+                    return self.binary_ops[Type.CLASS][operator](operand1, operand2)
             # error what about an obj reference and null
             self.interpreter.error(
                 ErrorType.TYPE_ERROR,
@@ -352,6 +418,12 @@ class ObjectDef:
         obj_name = code[1]
         if obj_name == InterpreterBase.ME_DEF:
             obj = self
+        elif obj_name == InterpreterBase.SUPER_DEF:
+            if not self.parent:
+                self.interpreter.error(
+                    ErrorType.NAME_ERROR, "Called super on an object that's not inherited", line_num_of_statement
+                )
+            obj = self.parent
         else:
             obj = self.__evaluate_expression(
                 env, obj_name, line_num_of_statement
@@ -396,19 +468,23 @@ class ObjectDef:
         return True
 
     def __map_method_names_to_method_definitions(self):
-        # self.methods = {}
-        # for method in self.class_def.get_methods():
-        #     self.methods[method.method_name] = method
         self.methods = self.class_def.get_methods()
 
     def __map_fields_to_values(self):
         self.fields = {}
-        for name, field in self.class_def.get_fields().items():
+        for field in self.class_def.get_fields():
             val = create_value(
                 field.default_field_value)
-            if check_type(val.type(), field.field_type):
-                self.fields[name] = val
-            else:
+            # HOW TO STORE TYPES IF WE ARE DECLARING A FIELD OF A CLASS OBJECT
+            print(f"FIELD TYPE CHECKING {field.field_type} {val.type()}")
+            if field.field_type in self.interpreter.class_index and val.type() == Type.CLASS:
+                self.fields[field.field_name] = (val, field.field_type)
+            elif field.field_type in self.interpreter.class_index:
+                self.interpreter.error(
+                    ErrorType.TYPE_ERROR, f"trying to assign a non-null object to {field.field_name}")
+            elif check_type(val.type(), field.field_type):
+                self.fields[field.field_name] = (val, field.field_type)
+            else:   # class name not found or primitive types don't match
                 self.interpreter.error(
                     ErrorType.TYPE_ERROR, f"invalid type/type mismatch with field {field.field_name}")
 

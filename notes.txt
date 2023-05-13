@@ -10,3 +10,14 @@
     iterate through the stack from newest to oldest when looking for a variable to get its value
     this method implicitly takes care of shadowing for you
     pop the environment off the stack when you leave its scope
+
+
+questions:
+1. how to deal with fields of parent classes vs our own (self) fields?
+    Hierarchy: Living thing -> Animal -> Dog -> Golden Retriever
+
+    If living thing has a field called name, and animal has it's own field called name and dog has its own field called name,
+    how should I store these?
+    Do I need to be able to differentiate between them? I think yes because if you call Dog's get name function it should return Dog's name
+    field (not golden retriever's). Am I supposed to implicitly declare ObjectDefs for every base class? This seems like too much but idk
+    How do I mandate that parent fields can't be accessed directly but are still part of the derived object and can be retrieved?

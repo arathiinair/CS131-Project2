@@ -23,12 +23,18 @@ class Value:
     def __init__(self, value_type, value=None):
         self.__type = value_type
         self.__value = value
+        self.__class_name = None
+        if self.__type == Type.CLASS and self.__value is not None:
+            self.__class_name = self.__value.class_def.name
 
     def type(self):
         return self.__type
 
     def value(self):
         return self.__value
+    
+    def class_name(self):
+        return self.__class_name
 
     def set(self, other):
         self.__type = other.type()
@@ -54,6 +60,7 @@ def create_value(val):
         return Value(Type.NOTHING, None)
     return None
 
+
 def check_type(value_type, variable_type):
     if value_type == Type.BOOL and variable_type == InterpreterBase.BOOL_DEF:
         return True
@@ -64,4 +71,3 @@ def check_type(value_type, variable_type):
     else:
         return False
     # ADD CLASS TYPE CHECKING
-        

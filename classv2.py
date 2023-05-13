@@ -53,17 +53,17 @@ class ClassDef:
     def __init__(self, class_def, interpreter, parent):
         self.interpreter = interpreter
         self.name = class_def[1]
-        self.ancestors = []  # ancestors include self, parent, ...
+        # self.ancestors = []  # ancestors include self, parent, ...
         self.parent = parent
         if not parent:  # no inheritance, just defining fields and/or methods
-            self.ancestors.append(self)
-            self.__create_field_list(class_def[2:], None)
+            # self.ancestors.append(self)
+            self.__create_field_list(class_def[2:])
             self.__create_method_list(class_def[2:])
         else:
-            self.ancestors.append(self)
-            for old_person in parent.ancestors:     # give derived classes a list of class definitions that it inherits from
-                self.ancestors.append(old_person)
-            self.__create_field_list(class_def[4:], parent)
+            # self.ancestors.append(self)
+            # for old_person in parent.ancestors:     # give derived classes a list of class definitions that it inherits from
+            #     self.ancestors.append(old_person)
+            self.__create_field_list(class_def[4:])
             self.__create_method_list(class_def[4:])
 
     def get_fields(self):
@@ -84,31 +84,40 @@ class ClassDef:
         """
         return self.ancestors
 
-    def __create_field_list(self, class_body, parent):
-        fields_already = {}
-        if parent:
-            # fields_already = self.__create_parent_fields(parent)
-            fields_already = parent.get_fields()
-        self.fields = {}
+    def __create_field_list(self, class_body):
+        # fields_already = {}
+        # if parent:
+        #     fields_already = parent.get_fields()
+        # self.fields = {}
+        # fields_defined_so_far = set()
+        # for member in class_body:
+        #     if member[0] == InterpreterBase.FIELD_DEF:
+        #         # redefinition of a field within the same class
+        #         if member[2] in fields_defined_so_far:
+        #             self.interpreter.error(
+        #                 ErrorType.NAME_ERROR,
+        #                 "duplicate field " + member[2],
+        #                 member[0].line_num,
+        #             )
+        #         print(f"FIELD NAME: {member[2]}")
+        #         # replaces a parent's field if it's redefined in child
+        #         fields_already[member[2]] = FieldDef(member)
+        #         print(f"FINAL FIELDS FOR {self.name} {member[2]} {member[3]}")
+        #         # otherwise just adds new field to dictionary
+        #         fields_defined_so_far.add(member[2])
+        # self.fields = fields_already
+        self.fields = []
         fields_defined_so_far = set()
         for member in class_body:
             if member[0] == InterpreterBase.FIELD_DEF:
-                # redefinition of a field within the same class
-                if member[2] in fields_defined_so_far:
+                if member[2] in fields_defined_so_far:  # redefinition
                     self.interpreter.error(
                         ErrorType.NAME_ERROR,
                         "duplicate field " + member[2],
                         member[0].line_num,
                     )
-                print(f"FIELD NAME: {member[2]}")
-                # replaces a parent's field if it's redefined in child
-                fields_already[member[2]] = FieldDef(member)
-                print(f"FINAL FIELDS FOR {self.name} {member[2]} {member[3]}")
-                # otherwise just adds new field to dictionary
+                self.fields.append(FieldDef(member))
                 fields_defined_so_far.add(member[2])
-        self.fields = fields_already
-        # for name, field in fields_already.items():
-        #     self.fields[name] = FieldDef(field)
 
     def __create_method_list(self, class_body):
         self.methods = {}
@@ -123,12 +132,3 @@ class ClassDef:
                     )
                 self.methods[member[2]] = MethodDef(member)
                 methods_defined_so_far.add(member[2])
-
-    # def __create_parent_fields(self, parent):
-    #     # create a dictionary of parent's fields
-    #     parent_fields = {}
-    #     parent_field_list = parent.fields
-    #     for field in parent_field_list:
-    #         print(f"PARENT FIELD NAME: {field.name()}")
-    #         parent_fields[field.name()] = field
-    #     return parent_fields

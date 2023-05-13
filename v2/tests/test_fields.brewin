@@ -1,19 +1,21 @@
 (class person
   (field string name "anonymous")
   (field int hey 4)
+  (method string get_name () (return name))
 )
 
 (class student inherits person
   (field int student_id 0)
   (field string name "maybe")
   (field string hey "hello")
+  (method string get_name () (return name))
 )
 
 (class main
   (field int s 10)
   (method void main ()
     (begin
-      (print s)
+      (print (call (new person) get_name))
     )
   )
 )
