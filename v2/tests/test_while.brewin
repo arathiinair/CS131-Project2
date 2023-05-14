@@ -1,0 +1,25 @@
+(class main
+ (field int x 0)
+ (method void main ()
+  (begin
+    (while (< x 2)
+    (begin
+        (let ((int x 3))
+            (begin 
+                (print x)
+                (set x (+ x 1))
+                (print x)
+            )   
+            (let ((string x "hello") (string v "hi"))
+                (print x)
+                (set x (+ v x))
+                (print x)
+            )
+            (set x (+ x 2))
+            (print x)
+        
+        )
+    (set x (+ x 1))))
+  )
+ )
+)

@@ -85,27 +85,6 @@ class ClassDef:
         return self.ancestors
 
     def __create_field_list(self, class_body):
-        # fields_already = {}
-        # if parent:
-        #     fields_already = parent.get_fields()
-        # self.fields = {}
-        # fields_defined_so_far = set()
-        # for member in class_body:
-        #     if member[0] == InterpreterBase.FIELD_DEF:
-        #         # redefinition of a field within the same class
-        #         if member[2] in fields_defined_so_far:
-        #             self.interpreter.error(
-        #                 ErrorType.NAME_ERROR,
-        #                 "duplicate field " + member[2],
-        #                 member[0].line_num,
-        #             )
-        #         print(f"FIELD NAME: {member[2]}")
-        #         # replaces a parent's field if it's redefined in child
-        #         fields_already[member[2]] = FieldDef(member)
-        #         print(f"FINAL FIELDS FOR {self.name} {member[2]} {member[3]}")
-        #         # otherwise just adds new field to dictionary
-        #         fields_defined_so_far.add(member[2])
-        # self.fields = fields_already
         self.fields = []
         fields_defined_so_far = set()
         for member in class_body:

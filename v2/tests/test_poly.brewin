@@ -10,8 +10,8 @@
   (method void set_beers((int g)) (set beers g))
   (method int get_beers() (return beers))
   (method string get_name() (return name))
-  (method void hey ((int indica) (string sativa))
-        (set sativa "hey")
+  (method int hey ((int indica) (string sativa))
+       (return indica)
   )
 )
 
@@ -21,8 +21,15 @@
   (method void main () 
     (begin 
     #(set i null)
-      (set s 5)
-      (call s hey 5 "hello")
+      #(set s (new student))
+      #(print (call s hey 5 "hello"))
+      (set s (call me testing))
+      (print (call s hey 5 "HELLO"))
+    )
+  )
+  (method person testing ()
+    (begin
+      (return (new student))
     )
   )
 )

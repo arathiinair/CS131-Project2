@@ -1,0 +1,27 @@
+(class main
+(field string x "5ive")
+(field bool person false)
+ (method void foo ()
+(begin
+   (let ((string person "chelsey"))
+     (begin
+     (print person)
+       (let ((int x 3))
+            (let ((string person "arjun"))
+                (begin
+                  (print x)
+                  (print person)
+                )
+            )
+        )
+        (print x)
+        (print person)
+      )
+  )
+  (print person)
+)
+ )
+ (method void main ()
+   (call me foo)
+ )
+)

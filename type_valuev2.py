@@ -32,7 +32,7 @@ class Value:
 
     def value(self):
         return self.__value
-    
+
     def class_name(self):
         return self.__class_name
 
@@ -70,4 +70,19 @@ def check_type(value_type, variable_type):
         return True
     else:
         return False
-    # ADD CLASS TYPE CHECKING
+
+
+class Variable():
+    def __init__(self, var_name, val_obj, var_type):
+        self.__name = var_name
+        self.__value = val_obj
+        self.__type = var_type
+
+    def name(self):
+        return self.__name
+
+    def value(self):
+        return self.__value
+
+    def type(self):
+        return self.__type

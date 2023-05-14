@@ -16,7 +16,7 @@
     (begin
         (set p1 (new person))
         (set p2 p1)
-        (if (== p1 p2) (return true) (return false))
+        (return (== p1 p2))
     )
   )
 )

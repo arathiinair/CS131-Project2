@@ -2,6 +2,8 @@
 Module that manages program environments. Currently a mapping from variables to values.
 """
 
+from intbase import ErrorType
+
 
 class EnvironmentManager:
     """
@@ -12,8 +14,9 @@ class EnvironmentManager:
     and a value (e.g., Int, 10).
     """
 
-    def __init__(self):
+    def __init__(self, interpreter):
         self.environment = {}
+        self.interpreter = interpreter
 
     def get(self, symbol):
         """
@@ -37,4 +40,8 @@ class EnvironmentManager:
         """
         Set data associated with a variable name.
         """
+        if symbol in self.environment and symbol_type != self.environment[symbol][1]:
+            # RAISE A TYPE ERROR HERE, CAN'T CHANGE THE TYPE OF A VARIABLE PLEASE AND THANK YOU
+            self.interpreter.error(
+                ErrorType.TYPE_ERROR, f"cannot change the type of {symbol} variable")
         self.environment[symbol] = (value, symbol_type)

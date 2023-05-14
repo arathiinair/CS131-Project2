@@ -21,3 +21,34 @@ questions:
     Do I need to be able to differentiate between them? I think yes because if you call Dog's get name function it should return Dog's name
     field (not golden retriever's). Am I supposed to implicitly declare ObjectDefs for every base class? This seems like too much but idk
     How do I mandate that parent fields can't be accessed directly but are still part of the derived object and can be retrieved?
+
+
+
+    How to mandate that when an object is set to null that it cannot be compared with or set to incompatible objects?
+
+
+(class main
+ (field int x 0)
+ (method void main ()
+  (begin
+    (while (< x 2)
+    (begin
+        (let ((int x 3))
+            (begin 
+                (print x)
+                (set x (+ x 1))
+                (print x)
+            )   
+            (let ((string x "hello") (string v "hi"))
+                (print x)
+                (set x (+ v x))
+                (print x)
+            )
+            (set x (+ x 2))
+            (print x)
+        
+        )
+    (set x 5)))
+  )
+ )
+)

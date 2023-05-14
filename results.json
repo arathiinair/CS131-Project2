@@ -1,7 +1,7 @@
 {
     "tests": [
         {
-            "name": "Correctness | test_return",
+            "name": "Correctness | test_while",
             "score": 1,
             "max_score": 1,
             "visibility": "visible"

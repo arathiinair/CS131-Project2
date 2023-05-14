@@ -190,20 +190,30 @@ def generate_test_suite_v2():
             # "test_inherit",
             # "test_inher1",
             # "test_let",
+            # "test_let2",
             # "test_return",
             # "test_basic",
             # "test_test",
-            # "test_set"
+            # "test_set",
+            # "test_poly",
+            # "test_eq",
+            # "test_poly2",
+            # "test_recursion2",
+            # "test_inst_ret2",
+            # "test_while"
         ],
         [
             # "test_incompat_return1",
             # "test_let2",
+            # "test_let",
             # "test_inher1",
             # "test_incompat_types2",
             # "test_field_type",
             # "test_arg_types",
             # "test_access_fields",
-            # "test_set"
+            # "test_set",
+            # "test_eq",
+            # "test_call_badargs"
         ],
     )
 
