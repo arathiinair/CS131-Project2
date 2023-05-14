@@ -1,0 +1,39 @@
+(class person 
+  (field string name "jane")
+  (method void set_name((string n)) (set name n))
+  (method string get_name() (return name))
+)
+
+(class student inherits person
+  (field int beers 3)
+  (field string student_name "studentname")
+  (field person p1 null)
+  (field person p2 null)
+  (method void set_beers((int g)) (set beers g))
+  (method int get_beers() (return beers))
+  (method string get_name() (return name))
+  (method bool hey ((int indica) (string sativa))
+    (begin
+        (set p1 (new person))
+        (set p2 p1)
+        (return (== p1 p2))
+    )
+  )
+  (method int check ((student s))
+    (return 5)
+    )
+)
+
+(class main
+  (field student s null)
+  (field main m null)
+  (field int i 5)
+  (method void main () 
+    (begin 
+    #(set i null)
+      (set s (new student))
+      (print (call s hey 5 "hello"))
+      (call s check m)
+    )
+  )
+)

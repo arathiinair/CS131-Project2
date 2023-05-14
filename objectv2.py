@@ -66,6 +66,9 @@ class ObjectDef:
         )  # maintains lexical environment for function; just params for now
         for (formal_var, formal_type), actual in zip(list(method_info.formal_params.items()), actual_params):
             # don't think i need to type check bc we've already done it in check method def function
+            if actual.value() is None and actual.class_name() is None:
+                actual = Value(Type.CLASS, actual.value(), formal_type)
+            print(f"SETTING {formal_var} to {actual.value()}")
             args.set(formal_var, actual, formal_type)
         env.append(args)
         return_type = method_info.return_type
@@ -77,9 +80,10 @@ class ObjectDef:
         if status == ObjectDef.STATUS_RETURN:
             return return_value
         # The method didn't explicitly return a value, so return the default value of the function's return type
+        ret_val = self.__get_default_return(return_type)
         print("RETURNING THIS VALUE OBJECT",
-              self.__get_default_return(return_type).value())
-        return self.__get_default_return(return_type)
+              ret_val.value())
+        return ret_val
 
     def __execute_statement(self, env, code, return_type):
         """
@@ -123,14 +127,18 @@ class ObjectDef:
         for var in code[1]:
             var_type = var[0]
             var_name = var[1]
-            var_val = create_value(var[2])
+            var_val = create_value(var[2], var_type)
             if var_val.type() == Type.CLASS:
-                if self.__polymorphic(var_type, var_val.value()):
+                if self.__polymorphic(var_type, var_val.class_name()):
                     block.set(var_name, var_val, var_type)
+                else:
+                    self.interpreter.error(
+                        ErrorType.TYPE_ERROR, f"setting variable {var_name} to wrong type", code[0].line_num)
             elif check_type(var_val.type(), var_type):
                 block.set(var_name, var_val, var_type)
             else:
-                self.interpreter.error(ErrorType.TYPE_ERROR, f"setting variable {var_name} to wrong type", code[0].line_num)
+                self.interpreter.error(
+                    ErrorType.TYPE_ERROR, f"setting variable {var_name} to wrong type", code[0].line_num)
         env.append(block)
         status, return_value = self.__execute_begin(env, code[1:], return_type)
         env.pop()
@@ -175,7 +183,9 @@ class ObjectDef:
             ret_val = self.__evaluate_expression(
                 env, code[1], code[0].line_num)
             if ret_val.type() == Type.CLASS and return_type in self.interpreter.class_index:
-                if self.__polymorphic(return_type, ret_val.value()):
+                if ret_val.value() is None and ret_val.class_name() is None:    # return null literal
+                    ret_val = Value(Type.CLASS, None, return_type)
+                if self.__polymorphic(return_type, ret_val.class_name()):
                     return ObjectDef.STATUS_RETURN, ret_val
             elif check_type(ret_val.type(), return_type):
                 return ObjectDef.STATUS_RETURN, ret_val
@@ -221,30 +231,27 @@ class ObjectDef:
                 ErrorType.TYPE_ERROR, "can't assign to nothing " + var_name, line_num
             )
         param_val = None
-        for i in range(len(env)-1, 0, -1):
-            param_val = env[i].get(var_name)
+        if len(env) == 1:
+            param_val = env[0].get(var_name)
             if param_val:
-                var_type = env[i].get_type(var_name)
-                current = i
-                break
+                var_type = env[0].get_type(var_name)
+                current = 0
+        else:
+            for i in range(len(env)-1, 0, -1):
+                param_val = env[i].get(var_name)
+                if param_val:
+                    var_type = env[i].get_type(var_name)
+                    current = i
+                    break
         if param_val is not None:   # the variable is a parameter to the function
             print(f"FOUND PARAM {var_name} {value.value()}")
-            # if value.value() is None:   # assigning a variable to None
-            #     print(
-            #         f"-1. TRYING TO ASSIGN {var_type} {var_name} TO {value.type()} {value.value()}")
-            #     if var_type in self.interpreter.class_index:
-            #         # can assign none to class types
-            #         env.set(var_name, value, var_type)
-            #     else:
-            #         self.interpreter.error(
-            #             ErrorType.TYPE_ERROR, f"can't assign primitive type {var_name} to null", line_num
-            #         )
             if value.type() == Type.CLASS:
-                # val_class = value.value().class_def.name
                 print(
                     f"-1. TRYING TO ASSIGN {var_type} {var_name} TO {value.type()} {value.value()}")
+                if value.value() is None and value.class_name() is None:  # setting variable to null literal
+                    value = Value(Type.CLASS, value.value(), var_type)
                 # CHANGE THIS TO DEAL WITH POLYMORPHISM
-                if self.__polymorphic(var_type, value.value()):
+                if self.__polymorphic(var_type, value):
                     env[current].set(var_name, value, var_type)
                 else:
                     self.interpreter.error(
@@ -266,24 +273,14 @@ class ObjectDef:
             )
         print(f"SETTING FIELD TO NEW VALUE {var_name} {value.value()}")
         field_type = self.fields[var_name][1]
-        # if value.value() is None:
-        #     print(
-        #         f"1. TRYING TO ASSIGN {field_type} {var_name} TO {value.type()} {value.value()}")
-        #     if field_type in self.interpreter.class_index:
-        #         self.fields[var_name] = (value, field_type)
-        #     else:
-        #         self.interpreter.error(
-        #             ErrorType.TYPE_ERROR, f"can't assign primitive type {var_name} to null", line_num
-        #         )
         if value.type() == Type.CLASS:
-            # val_class = value.value().class_def.name
-            # print(
-            #     f"2. TRYING TO ASSIGN {var_name} TO {val_class}")
             print(
                 f"1. TRYING TO ASSIGN {field_type} {var_name} TO {value.type()} {value.value()}")
             # CHANGE THIS TO DEAL WITH POLYMORPHISM
-            if self.__polymorphic(field_type, value.value()):
-                # THIS ONLY DEALS WITH OBJECTS OF THE SAME CLASS NOT DERIVED CLASSES
+            print(f"HELLO YOOHOO CLASSNAME {value.class_name()}")
+            if value.value() is None and value.class_name() is None:  # setting variable to null literal
+                value = Value(Type.CLASS, value.value(), field_type)
+            if self.__polymorphic(field_type, value.class_name()):
                 self.fields[var_name] = (value, field_type)
             else:
                 self.interpreter.error(
@@ -352,7 +349,7 @@ class ObjectDef:
         if not isinstance(expr, list):
             # locals shadow member variables
             val = None
-            print(f"VALLL {len(env)}")
+            # print(f"VALLL {len(env)}")
             if len(env) == 1:
                 val = env[0].get(expr)
             else:
@@ -368,6 +365,9 @@ class ObjectDef:
                 print(f"GET FIELD {self.fields[expr][0].value()}")
                 return self.fields[expr][0]
             # need to check for variable name and get its value too
+            # if it's hard to differentiate between primitives and null check this out
+            if expr == InterpreterBase.ME_DEF:
+                return Value(Type.CLASS, self, self.class_def.name)
             value = create_value(expr)
             if value is not None:
                 return value
@@ -415,7 +415,7 @@ class ObjectDef:
                         line_num_of_statement,
                     )
                 # if operand1.value() is None or operand2.value() is None or operand1.class_name() == operand2.class_name():
-                if self.comp_obj(operand1.value(), operand2.value()):
+                if self.comp_obj(operand1, operand2):
                     print(
                         f"OPERAND CLASSES {operand1.class_name()} {operand2.class_name()}")
                     # if either operand is null or both of of the same type (CHANGE THIS TO INCLUDE POLYMORPHISM)
@@ -448,7 +448,8 @@ class ObjectDef:
     # (new classname)
     def __execute_new_aux(self, _, code, line_num_of_statement):
         obj = self.interpreter.instantiate(code[1], line_num_of_statement)
-        return Value(Type.CLASS, obj)
+        print(f"CREATING NEW OBJECT WITH CLASS NAME {code[1]}")
+        return Value(Type.CLASS, obj, code[1])
 
     # this method is a helper used by call statements and call expressions
     # (call object_ref/me methodname p1 p2 p3)
@@ -494,36 +495,39 @@ class ObjectDef:
         elif return_type == InterpreterBase.BOOL_DEF:
             return Value(Type.BOOL, False)
         else:
-            return Value(Type.NOTHING, None)
+            return Value(Type.CLASS, None, return_type)
 
     def __check_method_def(self, method_def, my_params):
         # checks if method call arguments match number and types of parameters of this method definition object
         if len(method_def.formal_params) != len(my_params):
             return False
+        # zip formal parameter types with values of the arguments
         for param_type, param_val in zip(method_def.formal_params.values(), my_params):
             if param_type in self.interpreter.class_index:
                 if param_val.type() != Type.CLASS:  # assigning primitive value to class type parameter
                     return False
                 # assigning object of invalid class to this class type parameter
-                if not self.__polymorphic(param_type, param_val.value()):
+                if param_val.value() is None and param_val.class_name is None:  # if param_val is a null literal
+                    continue    # we can assign a null literal to any class variable
+                if not self.__polymorphic(param_type, param_val.class_name()):
                     return False
             elif not check_type(param_val.type(), param_type):
                 return False
         return True
 
-    def __polymorphic(self, base_name, derived_obj):
-        if base_name not in self.interpreter.class_index:
+    def __polymorphic(self, base_name, derived_name):
+        if base_name not in self.interpreter.class_index or derived_name is None:
             self.interpreter.error(
                 ErrorType.TYPE_ERROR, "Non-existent or primitive type"
             )
-        if derived_obj is None:
+        if base_name == derived_name:
             return True
-        if base_name == derived_obj.class_def.name:
-            return True
-        parent = derived_obj.parent
-        while parent:
-            if base_name == parent.class_def.name:
+        class_def = self.interpreter.class_index[derived_name]
+        parent_def = class_def.parent
+        while parent_def:
+            if base_name == parent_def.name:
                 return True
+            parent_def = parent_def.parent
         return False
 
     def __map_method_names_to_method_definitions(self):
@@ -533,10 +537,11 @@ class ObjectDef:
         self.fields = {}
         for field in self.class_def.get_fields():
             val = create_value(
-                field.default_field_value)
-            # HOW TO STORE TYPES IF WE ARE DECLARING A FIELD OF A CLASS OBJECT
-            print(f"FIELD TYPE CHECKING {field.field_type} {val.type()}")
+                field.default_field_value, field.field_type)
+            # print(f"FIELD TYPE CHECKING {field.field_type} {val.type()}")
             if field.field_type in self.interpreter.class_index and val.type() == Type.CLASS:
+                print(
+                    f"FIELD TYPE CHECKING {field.field_name} {field.field_type} {val.class_name()}")
                 self.fields[field.field_name] = (val, field.field_type)
             elif field.field_type in self.interpreter.class_index:
                 self.interpreter.error(
@@ -606,25 +611,10 @@ class ObjectDef:
         }
 
     def comp_obj(self, obj1, obj2):
-        if obj1 is None or obj2 is None:
+        if obj1.class_name() is None or obj2.class_name() is None:
             return True
-        # elif obj1 is None or obj2 is None:
-        #     return False
-        # object 1 is a base class of object 2
-        print(f"COMPARING {obj1.class_def.name} and {obj2.class_def.name}")
-        if self.__polymorphic(obj1.class_def.name, obj2):
-            # base = obj1
-            # derived = obj2
+        if self.__polymorphic(obj1.class_name(), obj2.class_name()):
             return True
-        # object 2 is a base class of object 1
-        elif self.__polymorphic(obj2.class_def.name, obj1):
-            # base = obj2
-            # derived = obj1
+        if self.__polymorphic(obj2.class_name(), obj1.class_name()):
             return True
-        else:   # neither are base classes, no possible polymorphism
-            return False
-        # while derived:
-        #     if base is derived:  # if base and derived refer to same object
-        #         return True
-        #     derived = derived.parent    # check for each of derived's ancestor objects
-        # return False
+        return False

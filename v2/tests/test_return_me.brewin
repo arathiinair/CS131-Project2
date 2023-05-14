@@ -18,14 +18,27 @@
   #(method string get_name () (return student_name))
 )
 
+(class worker inherits person
+  (field string name "pete")
+  (method string get_name() (return name))
+  (method worker get_me ()
+    (return me))
+)
+
 (class main
   (field person s null)
+  (field student stu null)
   (method void main () 
     (begin 
       (set s (new student))
       #(call s set_name "Charlotte")
-
+      (set s (new person))
+      (set s null)
+      (set s (new worker))
+      (set stu (new student))
+      (set s stu)
       (print (call s get_name))
+      (print (call (call (new worker) get_me) get_name))
     )
   )
 )

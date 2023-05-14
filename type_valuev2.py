@@ -20,12 +20,11 @@ class Type(Enum):
 class Value:
     """A representation for a value that contains a type tag."""
 
-    def __init__(self, value_type, value=None):
+    def __init__(self, value_type, value=None, class_name=None):
         self.__type = value_type
         self.__value = value
-        self.__class_name = None
-        if self.__type == Type.CLASS and self.__value is not None:
-            self.__class_name = self.__value.class_def.name
+        self.__class_name = class_name
+        # print(f"VALUE CLASSNAMES {value} {class_name}")
 
     def type(self):
         return self.__type
@@ -42,10 +41,12 @@ class Value:
 
 
 # pylint: disable=too-many-return-statements
-def create_value(val):
+def create_value(val, class_name=None):
     """
     Create a Value object from a Python value.
     """
+    if class_name == InterpreterBase.INT_DEF or class_name == InterpreterBase.STRING_DEF or class_name == InterpreterBase.BOOL_DEF:
+        class_name = None
     if val == InterpreterBase.TRUE_DEF:
         return Value(Type.BOOL, True)
     if val == InterpreterBase.FALSE_DEF:
@@ -55,9 +56,9 @@ def create_value(val):
     if val.lstrip('-').isnumeric():
         return Value(Type.INT, int(val))
     if val == InterpreterBase.NULL_DEF:
-        return Value(Type.CLASS, None)
+        return Value(Type.CLASS, None, class_name)
     if val == InterpreterBase.NOTHING_DEF:
-        return Value(Type.NOTHING, None)
+        return Value(Type.NOTHING)
     return None
 
 
@@ -70,19 +71,3 @@ def check_type(value_type, variable_type):
         return True
     else:
         return False
-
-
-class Variable():
-    def __init__(self, var_name, val_obj, var_type):
-        self.__name = var_name
-        self.__value = val_obj
-        self.__type = var_type
-
-    def name(self):
-        return self.__name
-
-    def value(self):
-        return self.__value
-
-    def type(self):
-        return self.__type

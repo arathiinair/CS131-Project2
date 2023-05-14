@@ -1,0 +1,14 @@
+(class main
+(field string y "HEY")
+ (method int foo ()
+   (begin
+     (let ((int y 5))
+       (print y)		# this prints out 5
+     )
+     (return y)  # this must result in a name error - y is out of scope!
+   )
+ )
+ (method void main ()
+   (call me foo)
+ )
+)
