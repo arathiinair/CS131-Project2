@@ -14,13 +14,15 @@ class ObjectDef:
     STATUS_RETURN = 1
     STATUS_NAME_ERROR = 2
     STATUS_TYPE_ERROR = 3
+    primitives = set([InterpreterBase.STRING_DEF,
+                     InterpreterBase.BOOL_DEF, InterpreterBase.INT_DEF])
 
     def __init__(self, interpreter, class_def, trace_output):
         # objref to interpreter object. used to report errors, get input, produce output
         self.interpreter = interpreter
         # take class body from 3rd+ list elements, e.g., ["class",classname", [classbody]]
         self.class_def = class_def
-        print(f"MY CLASS DEFINITION {self.class_def.name}")
+        # print(f"MY CLASS DEFINITION {self.class_def.name}")
         if self.class_def.parent:
             self.parent = ObjectDef(
                 self.interpreter, self.interpreter.class_index[self.class_def.parent.name], self.interpreter.trace_output)
@@ -48,11 +50,12 @@ class ObjectDef:
         method_info = None
         if method_name in self.methods:
             method_def = self.methods[method_name]
+            # print(f"CHECKING METHOD {method_name} IN {self.class_def.name}")
             if self.__check_method_def(method_def, actual_params):
                 method_info = method_def
-        elif self.parent:
-            print(
-                f"CHECKING PARENT OF {self.class_def.name} ({self.parent.class_def.name}) FOR {method_name}")
+        if self.parent and method_info is None:  # haven't found the method that matches yet
+            # print(
+            #     f"CHECKING PARENT OF {self.class_def.name} ({self.parent.class_def.name}) FOR {method_name}")
             return self.parent.call_method(method_name, actual_params, line_num_of_caller)
         if not method_info:  # throw this error when you've gone through all the parents and the method has not been found
             self.interpreter.error(
@@ -65,13 +68,14 @@ class ObjectDef:
             EnvironmentManager(self.interpreter)
         )  # maintains lexical environment for function; just params for now
         for (formal_var, formal_type), actual in zip(list(method_info.formal_params.items()), actual_params):
-            # don't think i need to type check bc we've already done it in check method def function
             if actual.value() is None and actual.class_name() is None:
                 actual = Value(Type.CLASS, actual.value(), formal_type)
             print(f"SETTING {formal_var} to {actual.value()}")
             args.set(formal_var, actual, formal_type)
         env.append(args)
         return_type = method_info.return_type
+        # if return_type not in ObjectDef.primitives and return_type not in self.interpreter.class_index and return_type != InterpreterBase.VOID_DEF:
+        #     self.interpreter.error()
         # since each method has a single top-level statement, execute it.
         status, return_value = self.__execute_statement(
             env, method_info.code, return_type)
@@ -80,6 +84,7 @@ class ObjectDef:
         if status == ObjectDef.STATUS_RETURN:
             return return_value
         # The method didn't explicitly return a value, so return the default value of the function's return type
+        print("GETTING DEFAULT")
         ret_val = self.__get_default_return(return_type)
         print("RETURNING THIS VALUE OBJECT",
               ret_val.value())
@@ -128,6 +133,10 @@ class ObjectDef:
             var_type = var[0]
             var_name = var[1]
             var_val = create_value(var[2], var_type)
+            test = block.get(var_name)
+            if test is not None:
+                self.interpreter.error(
+                    ErrorType.NAME_ERROR, f"already have a variable assigned to {var_name}", code[0].line_num)
             if var_val.type() == Type.CLASS:
                 if self.__polymorphic(var_type, var_val.class_name()):
                     block.set(var_name, var_val, var_type)
@@ -140,6 +149,11 @@ class ObjectDef:
                 self.interpreter.error(
                     ErrorType.TYPE_ERROR, f"setting variable {var_name} to wrong type", code[0].line_num)
         env.append(block)
+        # for each in env:
+        #     for thing, value in each.environment.items():
+        #         print(
+        #             f"THIS IS WHAT WE HAVE SO FAR {thing} {value[0].value()}")
+        #     print(f"DONE WITH THIS ENV")
         status, return_value = self.__execute_begin(env, code[1:], return_type)
         env.pop()
         return status, return_value
@@ -195,14 +209,14 @@ class ObjectDef:
 
     # (print expression1 expression2 ...) where expresion could be a variable, value, or a (+ ...)
     def __execute_print(self, env, code):
-        print(f"HELLO PRINT {code[1]}")
+        # print(f"HELLO PRINT {code[1]}")
         output = ""
         for expr in code[1:]:
             # TESTING NOTE: Will not test printing of object references
             term = self.__evaluate_expression(env, expr, code[0].line_num)
             val = term.value()
             typ = term.type()
-            print(f"PRINTING {expr} {val} {typ}")
+            # print(f"PRINTING {expr} {val} {typ}")
             if typ == Type.BOOL:
                 val = "true" if val else "false"
             # document - will never print out an object ref
@@ -224,25 +238,28 @@ class ObjectDef:
     # helper method used to set either parameter variables or member fields; parameters currently shadow
     # member fields
     def __set_variable_aux(self, env, var_name, value, line_num):
-        print(f"SETTING VARIABLE AUX WITH {value.type()}")
+        print(f"SETTING VARIABLE AUX WITH {value.type()} {value.value()}")
         # parameter shadows fields
         if value.type() == Type.NOTHING:
             self.interpreter.error(
                 ErrorType.TYPE_ERROR, "can't assign to nothing " + var_name, line_num
             )
         param_val = None
-        if len(env) == 1:
-            param_val = env[0].get(var_name)
+        print(f"LENGHT {len(env)}")
+        # for each in env:
+        #     for thing, val in each.environment.items():
+        #         print(
+        #             f"this IS WHAT WE HAVE SO FAR {thing} {val[0].value()}")
+        #         print(f"TEST GET {each.get(thing).value()}")
+        #         print(f"TESTING VAR NAME {each.get(var_name)}")
+        #     print(f"done WITH THIS ENV")
+        for i in range(len(env)-1, -1, -1):
+            # print(f"GETTING THINGS HERE {env[i].get(var_name)}")
+            param_val = env[i].get(var_name)
             if param_val:
-                var_type = env[0].get_type(var_name)
-                current = 0
-        else:
-            for i in range(len(env)-1, 0, -1):
-                param_val = env[i].get(var_name)
-                if param_val:
-                    var_type = env[i].get_type(var_name)
-                    current = i
-                    break
+                var_type = env[i].get_type(var_name)
+                current = i
+                break
         if param_val is not None:   # the variable is a parameter to the function
             print(f"FOUND PARAM {var_name} {value.value()}")
             if value.type() == Type.CLASS:
@@ -251,7 +268,7 @@ class ObjectDef:
                 if value.value() is None and value.class_name() is None:  # setting variable to null literal
                     value = Value(Type.CLASS, value.value(), var_type)
                 # CHANGE THIS TO DEAL WITH POLYMORPHISM
-                if self.__polymorphic(var_type, value):
+                if self.__polymorphic(var_type, value.class_name()):
                     env[current].set(var_name, value, var_type)
                 else:
                     self.interpreter.error(
@@ -349,26 +366,23 @@ class ObjectDef:
         if not isinstance(expr, list):
             # locals shadow member variables
             val = None
-            # print(f"VALLL {len(env)}")
-            if len(env) == 1:
-                val = env[0].get(expr)
-            else:
-                for i in range(len(env)-1, 0, -1):
-                    val = env[i].get(expr)
-                    if val:
-                        print(f"HELLO VAL {val}")
-                        break
-            if val is not None:  # if parameter to function
-                print("HEY VAL", val.value())
+            # loop through the stack of environments looking for the nearest definition of the variable
+            for i in range(len(env)-1, -1, -1):
+                val = env[i].get(expr)
+                if val:
+                    # print(f"HELLO VAL {val}")
+                    break
+            if val is not None:  # if found in env stack -> parameter/arg or local var
+                # print("HEY VAL", val.value())
                 return val
             if expr in self.fields:  # if it's a field
-                print(f"GET FIELD {self.fields[expr][0].value()}")
+                # print(f"GET FIELD {self.fields[expr][0].value()}")
                 return self.fields[expr][0]
             # need to check for variable name and get its value too
             # if it's hard to differentiate between primitives and null check this out
             if expr == InterpreterBase.ME_DEF:
                 return Value(Type.CLASS, self, self.class_def.name)
-            value = create_value(expr)
+            value = create_value(expr)  # expression is a constant/literal
             if value is not None:
                 return value
             self.interpreter.error(
@@ -478,11 +492,11 @@ class ObjectDef:
             actual_args.append(
                 self.__evaluate_expression(env, expr, line_num_of_statement)
             )
-        if actual_args == []:
-            print(f"CODE {code[2]}")
-        else:
-            for arg in actual_args:
-                print(f"CODE {code[2]}, actual_args {arg.value()}")
+        # if actual_args == []:
+        #     print(f"CODE {code[2]}")
+        # else:
+        #     for arg in actual_args:
+        #         print(f"CODE {code[2]}, actual_args {arg.value()}")
 
         return obj.call_method(code[2], actual_args, line_num_of_statement)
 
@@ -494,28 +508,46 @@ class ObjectDef:
             return Value(Type.STRING, "")
         elif return_type == InterpreterBase.BOOL_DEF:
             return Value(Type.BOOL, False)
+        elif return_type == InterpreterBase.VOID_DEF:
+            return Value(Type.NOTHING)
         else:
+            if return_type not in self.interpreter.class_index:
+                self.interpreter.error(
+                    ErrorType.TYPE_ERROR, f"invalid return type {return_type}")
             return Value(Type.CLASS, None, return_type)
 
     def __check_method_def(self, method_def, my_params):
-        # checks if method call arguments match number and types of parameters of this method definition object
-        if len(method_def.formal_params) != len(my_params):
-            return False
         # zip formal parameter types with values of the arguments
         for param_type, param_val in zip(method_def.formal_params.values(), my_params):
+            # print(f"PARAMETERS {param_type} and {param_val.value()}")
+            if param_type not in self.interpreter.class_index and param_type not in ObjectDef.primitives:
+                self.interpreter.error(
+                    ErrorType.TYPE_ERROR, "invalid type for parameter")
             if param_type in self.interpreter.class_index:
                 if param_val.type() != Type.CLASS:  # assigning primitive value to class type parameter
                     return False
                 # assigning object of invalid class to this class type parameter
-                if param_val.value() is None and param_val.class_name is None:  # if param_val is a null literal
+                if param_val.value() is None and param_val.class_name() is None:  # if param_val is a null literal
                     continue    # we can assign a null literal to any class variable
                 if not self.__polymorphic(param_type, param_val.class_name()):
                     return False
             elif not check_type(param_val.type(), param_type):
                 return False
+        # checks if method call arguments match number and types of parameters of this method definition object
+        if len(method_def.formal_params) != len(my_params):
+            # checks for invalid type names (ex: classnames that don't exist) in parameters
+            for param_type in method_def.formal_params.values():
+                if param_type not in self.interpreter.class_index and param_type not in ObjectDef.primitives:
+                    self.interpreter.error(
+                        ErrorType.TYPE_ERROR, "invalid type for parameter")
+            return False
+
         return True
 
     def __polymorphic(self, base_name, derived_name):
+        """
+        Checks to see if base_name is an ancestor of derived_name to enable potential polymorphism
+        """
         if base_name not in self.interpreter.class_index or derived_name is None:
             self.interpreter.error(
                 ErrorType.TYPE_ERROR, "Non-existent or primitive type"
@@ -540,8 +572,8 @@ class ObjectDef:
                 field.default_field_value, field.field_type)
             # print(f"FIELD TYPE CHECKING {field.field_type} {val.type()}")
             if field.field_type in self.interpreter.class_index and val.type() == Type.CLASS:
-                print(
-                    f"FIELD TYPE CHECKING {field.field_name} {field.field_type} {val.class_name()}")
+                # print(
+                #     f"FIELD TYPE CHECKING {field.field_name} {field.field_type} {val.class_name()}")
                 self.fields[field.field_name] = (val, field.field_type)
             elif field.field_type in self.interpreter.class_index:
                 self.interpreter.error(
@@ -611,6 +643,9 @@ class ObjectDef:
         }
 
     def comp_obj(self, obj1, obj2):
+        """
+        Determines if 2 objects should be comparable or not
+        """
         if obj1.class_name() is None or obj2.class_name() is None:
             return True
         if self.__polymorphic(obj1.class_name(), obj2.class_name()):

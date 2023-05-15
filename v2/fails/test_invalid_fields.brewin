@@ -1,0 +1,8 @@
+(class main
+(field person l null)
+ (method int foo ((int p)) 
+   (return 5))
+ (method void main ()
+  (print 5)
+ )
+)

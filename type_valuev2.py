@@ -63,6 +63,10 @@ def create_value(val, class_name=None):
 
 
 def check_type(value_type, variable_type):
+    """
+    Type checks primitive values with variable types
+    Returns false for non primitives and non matching arguments
+    """
     if value_type == Type.BOOL and variable_type == InterpreterBase.BOOL_DEF:
         return True
     elif value_type == Type.STRING and variable_type == InterpreterBase.STRING_DEF:

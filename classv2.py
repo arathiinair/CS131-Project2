@@ -20,6 +20,7 @@ class MethodDef:
         self.method_name = method_def[2]
         self.formal_params = {}
         for item in method_def[3]:
+            # parameter name to type map
             self.formal_params[item[1]] = item[0]
         self.code = method_def[4]
 
@@ -53,16 +54,11 @@ class ClassDef:
     def __init__(self, class_def, interpreter, parent):
         self.interpreter = interpreter
         self.name = class_def[1]
-        # self.ancestors = []  # ancestors include self, parent, ...
-        self.parent = parent
+        self.parent = parent    # class def object for parent class
         if not parent:  # no inheritance, just defining fields and/or methods
-            # self.ancestors.append(self)
             self.__create_field_list(class_def[2:])
             self.__create_method_list(class_def[2:])
         else:
-            # self.ancestors.append(self)
-            # for old_person in parent.ancestors:     # give derived classes a list of class definitions that it inherits from
-            #     self.ancestors.append(old_person)
             self.__create_field_list(class_def[4:])
             self.__create_method_list(class_def[4:])
 
@@ -77,12 +73,6 @@ class ClassDef:
         Get a list of MethodDefs for *all* methods in the class.
         """
         return self.methods
-
-    def get_ancestors(self):
-        """
-        Get a list of ClassDefs for all ancestors of the current class.
-        """
-        return self.ancestors
 
     def __create_field_list(self, class_body):
         self.fields = []

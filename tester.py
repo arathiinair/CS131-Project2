@@ -204,6 +204,8 @@ def generate_test_suite_v2():
             # "test_pass_by_value",
             # "test_set2",
             # "test_return_me",
+            # "test_let_set",
+            "test_overload"
         ],
         [
             # "test_incompat_return1",
@@ -217,7 +219,10 @@ def generate_test_suite_v2():
             # "test_access_fields",
             # "test_set",
             # "test_eq",
-            # "test_call_badargs"
+            # "test_call_badargs",
+            # "test_invalid_return",
+            # "test_invalid_param",
+            # "test_invalid_fields",
         ],
     )
 

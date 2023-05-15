@@ -44,4 +44,5 @@ class EnvironmentManager:
             # RAISE A TYPE ERROR HERE, CAN'T CHANGE THE TYPE OF A VARIABLE PLEASE AND THANK YOU
             self.interpreter.error(
                 ErrorType.TYPE_ERROR, f"cannot change the type of {symbol} variable")
+        print(f"SETTING {symbol} to {value}")
         self.environment[symbol] = (value, symbol_type)

@@ -1,0 +1,7 @@
+(class main
+ (method int foo ((person p)) 
+   (return 5))
+ (method void main ()
+  (call me foo)
+ )
+)
