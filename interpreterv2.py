@@ -41,7 +41,7 @@ class Interpreter(InterpreterBase):
 
         # call main function in main class; return value is ignored from main
         self.main_object.call_method(
-            InterpreterBase.MAIN_FUNC_DEF, [], invalid_line_num_of_caller
+            InterpreterBase.MAIN_FUNC_DEF, [], invalid_line_num_of_caller, None
         )
 
         # program terminates!

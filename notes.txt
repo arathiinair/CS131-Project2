@@ -27,6 +27,10 @@ questions:
     How to mandate that when an object is set to null that it cannot be compared with or set to incompatible objects?
 
 
+    CHECK ALL METHOD RETURN TYPES REGARDLESS OF IF THEY ARE CALLED
+    DO THIS IN THE OBJECT METHOD MAP THING FUNCTION
+
+
 (class main
  (field int x 0)
  (method void main ()

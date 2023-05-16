@@ -1,7 +1,13 @@
 {
     "tests": [
         {
-            "name": "Correctness | test_overload",
+            "name": "Correctness | test_recursion2",
+            "score": 1,
+            "max_score": 1,
+            "visibility": "visible"
+        },
+        {
+            "name": "Correctness | test_while",
             "score": 1,
             "max_score": 1,
             "visibility": "visible"

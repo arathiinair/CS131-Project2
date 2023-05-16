@@ -195,9 +195,9 @@ def generate_test_suite_v2():
             # "test_basic",
             # "test_test",
             # "test_set",
-            # "test_recursion2",
+            "test_recursion2",
             # "test_inst_ret2",
-            # "test_while",
+            "test_while",
             # "test_poly",
             # "test_eq",
             # "test_poly2",
@@ -205,7 +205,8 @@ def generate_test_suite_v2():
             # "test_set2",
             # "test_return_me",
             # "test_let_set",
-            "test_overload"
+            # "test_overload",
+            # "test_inher"
         ],
         [
             # "test_incompat_return1",
@@ -223,6 +224,9 @@ def generate_test_suite_v2():
             # "test_invalid_return",
             # "test_invalid_param",
             # "test_invalid_fields",
+            # "test_return_types",
+            # "kyle",
+            # "test_ret_type"
         ],
     )
 

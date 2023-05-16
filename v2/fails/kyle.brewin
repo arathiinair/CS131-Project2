@@ -1,0 +1,13 @@
+(class B inherits A
+(method void speak () (print "hi"))
+)
+
+(class A
+(field int hi 0)
+)
+
+(class main
+(method void main ()
+(call (new B) speak)
+)
+)
