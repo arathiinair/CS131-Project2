@@ -80,11 +80,8 @@ class ClassDef:
         for member in class_body:
             if member[0] == InterpreterBase.FIELD_DEF:
                 if member[2] in fields_defined_so_far:  # redefinition
-                    self.interpreter.error(
-                        ErrorType.NAME_ERROR,
-                        "duplicate field " + member[2],
-                        member[0].line_num,
-                    )
+                    self.interpreter.error(ErrorType.NAME_ERROR,
+                                           "duplicate field " + member[2], member[0].line_num)
                 self.fields.append(FieldDef(member))
                 fields_defined_so_far.add(member[2])
 
@@ -94,10 +91,7 @@ class ClassDef:
         for member in class_body:
             if member[0] == InterpreterBase.METHOD_DEF:
                 if member[2] in methods_defined_so_far:  # redefinition
-                    self.interpreter.error(
-                        ErrorType.NAME_ERROR,
-                        "duplicate method " + member[2],
-                        member[0].line_num,
-                    )
+                    self.interpreter.error(ErrorType.NAME_ERROR,
+                                           "duplicate method " + member[2], member[0].line_num)
                 self.methods[member[2]] = MethodDef(member)
                 methods_defined_so_far.add(member[2])

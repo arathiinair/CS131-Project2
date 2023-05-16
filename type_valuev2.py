@@ -24,7 +24,6 @@ class Value:
         self.__type = value_type
         self.__value = value
         self.__class_name = class_name
-        # print(f"VALUE CLASSNAMES {value} {class_name}")
 
     def type(self):
         return self.__type

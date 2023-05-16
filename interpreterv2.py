@@ -28,21 +28,17 @@ class Interpreter(InterpreterBase):
         status, parsed_program = BParser.parse(program)
         if not status:
             super().error(
-                ErrorType.SYNTAX_ERROR, f"Parse error on program: {parsed_program}"
-            )
-        print(parsed_program)
+                ErrorType.SYNTAX_ERROR, f"Parse error on program: {parsed_program}")
         self.__map_class_names_to_class_defs(parsed_program)
 
         # instantiate main class
         invalid_line_num_of_caller = None
         self.main_object = self.instantiate(
-            InterpreterBase.MAIN_CLASS_DEF, invalid_line_num_of_caller
-        )
+            InterpreterBase.MAIN_CLASS_DEF, invalid_line_num_of_caller)
 
         # call main function in main class; return value is ignored from main
         self.main_object.call_method(
-            InterpreterBase.MAIN_FUNC_DEF, [], invalid_line_num_of_caller, None
-        )
+            InterpreterBase.MAIN_FUNC_DEF, [], invalid_line_num_of_caller, None)
 
         # program terminates!
 
@@ -56,13 +52,10 @@ class Interpreter(InterpreterBase):
             super().error(
                 ErrorType.TYPE_ERROR,
                 f"No class named {class_name} found",
-                line_num_of_statement,
-            )
+                line_num_of_statement)
         class_def = self.class_index[class_name]
-        # print(f"CLASS NAME {class_def.name}")
         obj = ObjectDef(
-            self, class_def, self.trace_output
-        )  # Create an object based on this class definition
+            self, class_def, self.trace_output)  # Create an object based on this class definition
         return obj
 
     def __map_class_names_to_class_defs(self, program):
@@ -70,26 +63,17 @@ class Interpreter(InterpreterBase):
         for item in program:
             if item[0] == InterpreterBase.CLASS_DEF:
                 if item[1] in self.class_index:
-                    super().error(
-                        ErrorType.TYPE_ERROR,
-                        f"Duplicate class name {item[1]}",
-                        item[0].line_num,
-                    )
+                    super().error(ErrorType.TYPE_ERROR,
+                                  f"Duplicate class name {item[1]}", item[0].line_num)
                 # no inheritance
                 if isinstance(item[2], list) and item[2] != InterpreterBase.INHERITS_DEF:
                     self.class_index[item[1]] = ClassDef(item, self, None)
-                    # print(f"NO INHERITANCE {item[1]}")
                 elif item[2] == InterpreterBase.INHERITS_DEF:
-                    # print(f"STUDENT {item[3]}")
                     if item[3] not in self.class_index:
                         # inheriting from a class that doesn't exist
-                        super().error(
-                            ErrorType.NAME_ERROR,
-                            f"Base class {item[3]} does not exist",
-                            item[0].line_num,
-                        )
+                        super().error(ErrorType.NAME_ERROR,
+                                      f"Base class {item[3]} does not exist", item[0].line_num)
                     else:
                         parent = self.class_index[item[3]]
-                        # print(f"INHERITING PARENT CLASS {item[3]}")
                         self.class_index[item[1]] = ClassDef(
                             item, self, parent)

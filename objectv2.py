@@ -22,12 +22,9 @@ class ObjectDef:
         self.interpreter = interpreter
         # take class body from 3rd+ list elements, e.g., ["class",classname", [classbody]]
         self.class_def = class_def
-        # print(f"MY CLASS DEFINITION {self.class_def.name}")
         if self.class_def.parent:
             self.parent = ObjectDef(
                 self.interpreter, self.interpreter.class_index[self.class_def.parent.name], self.interpreter.trace_output)
-            print(
-                f"HI IM A {self.class_def.name} AND THIS IS MY PARENT {self.parent.class_def.name}")
         else:
             self.parent = None
         self.trace_output = trace_output
@@ -43,27 +40,18 @@ class ObjectDef:
         The caller passes in the line number so we can properly generate an error message.
         The error is then generated at the source (i.e., where the call is initiated).
         """
-        print("METHOD NAMES")
-        for method in self.methods.keys():
-            print(method)
         if original_caller is None:
             original_caller = self
         method_info = None
         if method_name in self.methods:
             method_def = self.methods[method_name]
-            # print(f"CHECKING METHOD {method_name} IN {self.class_def.name}")
             if self.__check_method_def(method_def, actual_params):
                 method_info = method_def
         if self.parent and method_info is None:  # haven't found the method that matches yet
-            # print(
-            #     f"CHECKING PARENT OF {self.class_def.name} ({self.parent.class_def.name}) FOR {method_name}")
             return self.parent.call_method(method_name, actual_params, line_num_of_caller, original_caller)
         if not method_info:  # throw this error when you've gone through all the parents and the method has not been found
             self.interpreter.error(
-                ErrorType.NAME_ERROR,
-                "unknown method " + method_name,
-                line_num_of_caller,
-            )
+                ErrorType.NAME_ERROR, "unknown method " + method_name, line_num_of_caller)
         env = []
         args = (
             EnvironmentManager(self.interpreter)
@@ -71,12 +59,9 @@ class ObjectDef:
         for (formal_var, formal_type), actual in zip(list(method_info.formal_params.items()), actual_params):
             if actual.value() is None and actual.class_name() is None:
                 actual = Value(Type.CLASS, actual.value(), formal_type)
-            print(f"SETTING {formal_var} to {actual.value()}")
             args.set(formal_var, actual, formal_type)
         env.append(args)
         return_type = method_info.return_type
-        # if return_type not in ObjectDef.primitives and return_type not in self.interpreter.class_index and return_type != InterpreterBase.VOID_DEF:
-        #     self.interpreter.error()
         # since each method has a single top-level statement, execute it.
         status, return_value = self.__execute_statement(
             env, method_info.code, return_type, original_caller)
@@ -85,10 +70,7 @@ class ObjectDef:
         if status == ObjectDef.STATUS_RETURN:
             return return_value
         # The method didn't explicitly return a value, so return the default value of the function's return type
-        print("GETTING DEFAULT")
         ret_val = self.__get_default_return(return_type)
-        print("RETURNING THIS VALUE OBJECT",
-              ret_val.value())
         return ret_val
 
     def __execute_statement(self, env, code, return_type, original_caller):
@@ -124,8 +106,7 @@ class ObjectDef:
             return self.__execute_let(env, code, return_type, original_caller)
 
         self.interpreter.error(
-            ErrorType.SYNTAX_ERROR, "unknown statement " + tok, tok.line_num
-        )
+            ErrorType.SYNTAX_ERROR, "unknown statement " + tok, tok.line_num)
 
     def __execute_let(self, env, code, return_type, original_caller):
         block = EnvironmentManager(self.interpreter)
@@ -150,11 +131,6 @@ class ObjectDef:
                 self.interpreter.error(
                     ErrorType.TYPE_ERROR, f"setting variable {var_name} to wrong type", code[0].line_num)
         env.append(block)
-        # for each in env:
-        #     for thing, value in each.environment.items():
-        #         print(
-        #             f"THIS IS WHAT WE HAVE SO FAR {thing} {value[0].value()}")
-        #     print(f"DONE WITH THIS ENV")
         status, return_value = self.__execute_begin(
             env, code[1:], return_type, original_caller)
         env.pop()
@@ -179,8 +155,7 @@ class ObjectDef:
     # statement version of a method call; there's also an expression version of a method call below
     def __execute_call(self, env, code, original_caller):
         return ObjectDef.STATUS_PROCEED, self.__execute_call_aux(
-            env, code, code[0].line_num, original_caller
-        )
+            env, code, code[0].line_num, original_caller)
 
     # (set varname expression), where expresion could be a value, or a (+ ...)
     def __execute_set(self, env, code, original_caller):
@@ -212,7 +187,6 @@ class ObjectDef:
 
     # (print expression1 expression2 ...) where expresion could be a variable, value, or a (+ ...)
     def __execute_print(self, env, code, original_caller):
-        # print(f"HELLO PRINT {code[1]}")
         output = ""
         for expr in code[1:]:
             # TESTING NOTE: Will not test printing of object references
@@ -220,7 +194,6 @@ class ObjectDef:
                 env, expr, code[0].line_num, original_caller)
             val = term.value()
             typ = term.type()
-            # print(f"PRINTING {expr} {val} {typ}")
             if typ == Type.BOOL:
                 val = "true" if val else "false"
             # document - will never print out an object ref
@@ -242,79 +215,50 @@ class ObjectDef:
     # helper method used to set either parameter variables or member fields; parameters currently shadow
     # member fields
     def __set_variable_aux(self, env, var_name, value, line_num):
-        print(f"SETTING VARIABLE AUX WITH {value.type()} {value.value()}")
         # parameter shadows fields
         if value.type() == Type.NOTHING:
             self.interpreter.error(
-                ErrorType.TYPE_ERROR, "can't assign to nothing " + var_name, line_num
-            )
+                ErrorType.TYPE_ERROR, "can't assign to nothing " + var_name, line_num)
         param_val = None
-        # print(f"LENGHT {len(env)}")
-        # for each in env:
-        #     for thing, val in each.environment.items():
-        #         print(
-        #             f"this IS WHAT WE HAVE SO FAR {thing} {val[0].value()}")
-        #         print(f"TEST GET {each.get(thing).value()}")
-        #         print(f"TESTING VAR NAME {each.get(var_name)}")
-        #     print(f"done WITH THIS ENV")
         for i in range(len(env)-1, -1, -1):
-            # print(f"GETTING THINGS HERE {env[i].get(var_name)}")
             param_val = env[i].get(var_name)
             if param_val:
                 var_type = env[i].get_type(var_name)
                 current = i
                 break
         if param_val is not None:   # the variable is a parameter to the function
-            print(f"FOUND PARAM {var_name} {value.value()}")
             if value.type() == Type.CLASS:
-                print(
-                    f"-1. TRYING TO ASSIGN {var_type} {var_name} TO {value.type()} {value.value()}")
                 if value.value() is None and value.class_name() is None:  # setting variable to null literal
                     value = Value(Type.CLASS, value.value(), var_type)
-                # CHANGE THIS TO DEAL WITH POLYMORPHISM
                 if self.__polymorphic(var_type, value.class_name()):
                     env[current].set(var_name, value, var_type)
                 else:
                     self.interpreter.error(
-                        ErrorType.TYPE_ERROR, f"assigning {var_name} to a class variable of the wrong type", line_num
-                    )
+                        ErrorType.TYPE_ERROR, f"assigning {var_name} to a class variable of the wrong type", line_num)
             elif check_type(value.type(), var_type):
                 env[current].set(var_name, value, var_type)
             else:
-                print(
-                    f"-3. TRYING TO ASSIGN {var_type} {var_name} TO {value.type()} {value.value()}")
                 self.interpreter.error(
-                    ErrorType.TYPE_ERROR, f"assigning {var_name} to a value of the wrong type", line_num
-                )
+                    ErrorType.TYPE_ERROR, f"assigning {var_name} to a value of the wrong type", line_num)
             return
 
         if var_name not in self.fields:
             self.interpreter.error(
-                ErrorType.NAME_ERROR, "unknown variable " + var_name, line_num
-            )
-        print(f"SETTING FIELD TO NEW VALUE {var_name} {value.value()}")
+                ErrorType.NAME_ERROR, "unknown variable " + var_name, line_num)
         field_type = self.fields[var_name][1]
         if value.type() == Type.CLASS:
-            print(
-                f"1. TRYING TO ASSIGN {field_type} {var_name} TO {value.type()} {value.value()}")
-            # CHANGE THIS TO DEAL WITH POLYMORPHISM
-            print(f"HELLO YOOHOO CLASSNAME {value.class_name()}")
             if value.value() is None and value.class_name() is None:  # setting variable to null literal
                 value = Value(Type.CLASS, value.value(), field_type)
             if self.__polymorphic(field_type, value.class_name()):
                 self.fields[var_name] = (value, field_type)
             else:
                 self.interpreter.error(
-                    ErrorType.TYPE_ERROR, f"assigning {var_name} to a class variable of the wrong type", line_num
-                )
+                    ErrorType.TYPE_ERROR, f"assigning {var_name} to a class variable of the wrong type", line_num)
         elif check_type(value.type(), field_type):
             self.fields[var_name] = (value, field_type)
         else:
-            print(
-                f"3. TRYING TO ASSIGN {field_type} {var_name} TO {value.type()} {value.value()}")
             self.interpreter.error(
-                ErrorType.TYPE_ERROR, f"assigning {var_name} to a value of the wrong type", line_num
-            )
+                ErrorType.TYPE_ERROR, f"assigning {var_name} to a value of the wrong type", line_num)
 
     # (if expression (statement) (statement) ) where expresion could be a boolean constant (e.g., true), member
     # variable without ()s, or a boolean expression in parens, like (> 5 a)
@@ -322,20 +266,15 @@ class ObjectDef:
         condition = self.__evaluate_expression(
             env, code[1], code[0].line_num, original_caller)
         if condition.type() != Type.BOOL:
-            self.interpreter.error(
-                ErrorType.TYPE_ERROR,
-                "non-boolean if condition " + ' '.join(x for x in code[1]),
-                code[0].line_num,
-            )
+            self.interpreter.error(ErrorType.TYPE_ERROR,
+                                   "non-boolean if condition " + ' '.join(x for x in code[1]), code[0].line_num)
         if condition.value():
             status, return_value = self.__execute_statement(
-                env, code[2], return_type, original_caller
-            )  # if condition was true
+                env, code[2], return_type, original_caller)  # if condition was true
             return status, return_value
         if len(code) == 4:
             status, return_value = self.__execute_statement(
-                env, code[3], return_type, original_caller
-            )  # if condition was false, do else
+                env, code[3], return_type, original_caller)  # if condition was false, do else
             return status, return_value
         return ObjectDef.STATUS_PROCEED, None
 
@@ -346,28 +285,21 @@ class ObjectDef:
             condition = self.__evaluate_expression(
                 env, code[1], code[0].line_num, original_caller)
             if condition.type() != Type.BOOL:
-                self.interpreter.error(
-                    ErrorType.TYPE_ERROR,
-                    "non-boolean while condition " +
-                    ' '.join(x for x in code[1]),
-                    code[0].line_num,
-                )
+                self.interpreter.error(ErrorType.TYPE_ERROR,
+                                       "non-boolean while condition " + ' '.join(x for x in code[1]), code[0].line_num)
             if not condition.value():  # condition is false, exit loop immediately
                 return ObjectDef.STATUS_PROCEED, None
             # condition is true, run body of while loop
             status, return_value = self.__execute_statement(
                 env, code[2], return_type, original_caller)
             if status == ObjectDef.STATUS_RETURN:
-                return (
-                    status,
-                    return_value,
-                )  # could be a valid return of a value or an error
+                # could be a valid return of a value or an error
+                return (status, return_value)
 
     # given an expression, return a Value object with the expression's evaluated result
     # expressions could be: constants (true, 5, "blah"), variables (e.g., x), arithmetic/string/logical expressions
     # like (+ 5 6), (+ "abc" "def"), (> a 5), method calls (e.g., (call me foo)), or instantiations (e.g., new dog_class)
     def __evaluate_expression(self, env, expr, line_num_of_statement, original_caller):
-        print(f"EXPRESSIONING {expr}")
         if not isinstance(expr, list):
             # locals shadow member variables
             val = None
@@ -375,13 +307,10 @@ class ObjectDef:
             for i in range(len(env)-1, -1, -1):
                 val = env[i].get(expr)
                 if val:
-                    # print(f"HELLO VAL {val}")
                     break
             if val is not None:  # if found in env stack -> parameter/arg or local var
-                # print("HEY VAL", val.value())
                 return val
             if expr in self.fields:  # if it's a field
-                # print(f"GET FIELD {self.fields[expr][0].value()}")
                 return self.fields[expr][0]
             # need to check for variable name and get its value too
             # if it's hard to differentiate between primitives and null check this out
@@ -390,11 +319,8 @@ class ObjectDef:
             value = create_value(expr)  # expression is a constant/literal
             if value is not None:
                 return value
-            self.interpreter.error(
-                ErrorType.NAME_ERROR,
-                "invalid field or parameter " + expr,
-                line_num_of_statement,
-            )
+            self.interpreter.error(ErrorType.NAME_ERROR,
+                                   "invalid field or parameter " + expr, line_num_of_statement)
 
         operator = expr[0]
         if operator in self.binary_op_list:
@@ -404,57 +330,36 @@ class ObjectDef:
                 env, expr[2], line_num_of_statement, original_caller)
             if operand1.type() == operand2.type() and operand1.type() == Type.INT:
                 if operator not in self.binary_ops[Type.INT]:
-                    self.interpreter.error(
-                        ErrorType.TYPE_ERROR,
-                        "invalid operator applied to ints",
-                        line_num_of_statement,
-                    )
+                    self.interpreter.error(ErrorType.TYPE_ERROR,
+                                           "invalid operator applied to ints", line_num_of_statement)
                 return self.binary_ops[Type.INT][operator](operand1, operand2)
             if operand1.type() == operand2.type() and operand1.type() == Type.STRING:
                 if operator not in self.binary_ops[Type.STRING]:
-                    self.interpreter.error(
-                        ErrorType.TYPE_ERROR,
-                        "invalid operator applied to strings",
-                        line_num_of_statement,
-                    )
+                    self.interpreter.error(ErrorType.TYPE_ERROR,
+                                           "invalid operator applied to strings", line_num_of_statement)
                 return self.binary_ops[Type.STRING][operator](operand1, operand2)
             if operand1.type() == operand2.type() and operand1.type() == Type.BOOL:
                 if operator not in self.binary_ops[Type.BOOL]:
                     self.interpreter.error(
-                        ErrorType.TYPE_ERROR,
-                        "invalid operator applied to bool",
-                        line_num_of_statement,
-                    )
+                        ErrorType.TYPE_ERROR, "invalid operator applied to bool", line_num_of_statement)
                 return self.binary_ops[Type.BOOL][operator](operand1, operand2)
             if operand1.type() == operand2.type() and operand1.type() == Type.CLASS:
                 if operator not in self.binary_ops[Type.CLASS]:
-                    self.interpreter.error(
-                        ErrorType.TYPE_ERROR,
-                        "invalid operator applied to class",
-                        line_num_of_statement,
-                    )
-                # if operand1.value() is None or operand2.value() is None or operand1.class_name() == operand2.class_name():
+                    self.interpreter.error(ErrorType.TYPE_ERROR,
+                                           "invalid operator applied to class", line_num_of_statement,)
                 if self.comp_obj(operand1, operand2):
-                    print(
-                        f"OPERAND CLASSES {operand1.class_name()} {operand2.class_name()}")
                     # if either operand is null or both of of the same type (CHANGE THIS TO INCLUDE POLYMORPHISM)
                     return self.binary_ops[Type.CLASS][operator](operand1, operand2)
             # error what about an obj reference and null
-            self.interpreter.error(
-                ErrorType.TYPE_ERROR,
-                f"operator {operator} applied to two incompatible types",
-                line_num_of_statement,
-            )
+            self.interpreter.error(ErrorType.TYPE_ERROR,
+                                   f"operator {operator} applied to two incompatible types", line_num_of_statement)
         if operator in self.unary_op_list:
             operand = self.__evaluate_expression(
                 env, expr[1], line_num_of_statement, original_caller)
             if operand.type() == Type.BOOL:
                 if operator not in self.unary_ops[Type.BOOL]:
-                    self.interpreter.error(
-                        ErrorType.TYPE_ERROR,
-                        "invalid unary operator applied to bool",
-                        line_num_of_statement,
-                    )
+                    self.interpreter.error(ErrorType.TYPE_ERROR,
+                                           "invalid unary operator applied to bool", line_num_of_statement)
                 return self.unary_ops[Type.BOOL][operator](operand)
 
         # handle call expression: (call objref methodname p1 p2 p3)
@@ -467,7 +372,6 @@ class ObjectDef:
     # (new classname)
     def __execute_new_aux(self, _, code, line_num_of_statement):
         obj = self.interpreter.instantiate(code[1], line_num_of_statement)
-        print(f"CREATING NEW OBJECT WITH CLASS NAME {code[1]}")
         return Value(Type.CLASS, obj, code[1])
 
     # this method is a helper used by call statements and call expressions
@@ -480,13 +384,11 @@ class ObjectDef:
         elif obj_name == InterpreterBase.SUPER_DEF:
             if not self.parent:
                 self.interpreter.error(
-                    ErrorType.NAME_ERROR, "Called super on an object that's not inherited", line_num_of_statement
-                )
+                    ErrorType.NAME_ERROR, "Called super on an object that's not inherited", line_num_of_statement)
             obj = self.parent
         else:
             obj = self.__evaluate_expression(
-                env, obj_name, line_num_of_statement, original_caller
-            ).value()
+                env, obj_name, line_num_of_statement, original_caller).value()
         # prepare the actual arguments for passing
         if obj is None:
             self.interpreter.error(
@@ -495,15 +397,7 @@ class ObjectDef:
         actual_args = []
         for expr in code[3:]:
             actual_args.append(
-                self.__evaluate_expression(
-                    env, expr, line_num_of_statement, original_caller)
-            )
-        # if actual_args == []:
-        #     print(f"CODE {code[2]}")
-        # else:
-        #     for arg in actual_args:
-        #         print(f"CODE {code[2]}, actual_args {arg.value()}")
-
+                self.__evaluate_expression(env, expr, line_num_of_statement, original_caller))
         return obj.call_method(code[2], actual_args, line_num_of_statement, None)
 
     def __get_default_return(self, return_type):
@@ -525,7 +419,6 @@ class ObjectDef:
     def __check_method_def(self, method_def, my_params):
         # zip formal parameter types with values of the arguments
         for param_type, param_val in zip(method_def.formal_params.values(), my_params):
-            # print(f"PARAMETERS {param_type} and {param_val.value()}")
             if param_type not in self.interpreter.class_index and param_type not in ObjectDef.primitives:
                 self.interpreter.error(
                     ErrorType.TYPE_ERROR, "invalid type for parameter")
@@ -556,8 +449,7 @@ class ObjectDef:
         """
         if base_name not in self.interpreter.class_index or derived_name is None:
             self.interpreter.error(
-                ErrorType.TYPE_ERROR, "Non-existent or primitive type"
-            )
+                ErrorType.TYPE_ERROR, "Non-existent or primitive type")
         if base_name == derived_name:
             return True
         class_def = self.interpreter.class_index[derived_name]
@@ -580,10 +472,7 @@ class ObjectDef:
         for field in self.class_def.get_fields():
             val = create_value(
                 field.default_field_value, field.field_type)
-            # print(f"FIELD TYPE CHECKING {field.field_type} {val.type()}")
             if field.field_type in self.interpreter.class_index and val.type() == Type.CLASS:
-                # print(
-                #     f"FIELD TYPE CHECKING {field.field_name} {field.field_type} {val.class_name()}")
                 self.fields[field.field_name] = (val, field.field_type)
             elif field.field_type in self.interpreter.class_index:
                 self.interpreter.error(
