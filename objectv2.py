@@ -42,6 +42,7 @@ class ObjectDef:
         """
         if original_caller is None:
             original_caller = self
+        print(f"OG {original_caller.class_def.name} for {method_name}")
         method_info = None
         if method_name in self.methods:
             method_def = self.methods[method_name]
@@ -174,6 +175,7 @@ class ObjectDef:
         else:
             ret_val = self.__evaluate_expression(
                 env, code[1], code[0].line_num, original_caller)
+            # print(ret_val.value().class_def.name)
             if ret_val.type() == Type.CLASS and return_type in self.interpreter.class_index:
                 if ret_val.value() is None and ret_val.class_name() is None:    # return null literal
                     ret_val = Value(Type.CLASS, None, return_type)
@@ -300,6 +302,7 @@ class ObjectDef:
     # expressions could be: constants (true, 5, "blah"), variables (e.g., x), arithmetic/string/logical expressions
     # like (+ 5 6), (+ "abc" "def"), (> a 5), method calls (e.g., (call me foo)), or instantiations (e.g., new dog_class)
     def __evaluate_expression(self, env, expr, line_num_of_statement, original_caller):
+        print(f"EVALUATING {expr}")
         if not isinstance(expr, list):
             # locals shadow member variables
             val = None
@@ -315,7 +318,8 @@ class ObjectDef:
             # need to check for variable name and get its value too
             # if it's hard to differentiate between primitives and null check this out
             if expr == InterpreterBase.ME_DEF:
-                return Value(Type.CLASS, self, self.class_def.name)
+                print(f"EVALING {original_caller.class_def.name}")
+                return Value(Type.CLASS, original_caller, original_caller.class_def.name)
             value = create_value(expr)  # expression is a constant/literal
             if value is not None:
                 return value
@@ -379,13 +383,15 @@ class ObjectDef:
     def __execute_call_aux(self, env, code, line_num_of_statement, original_caller):
         # determine which object we want to call the method on
         obj_name = code[1]
+        caller = None
         if obj_name == InterpreterBase.ME_DEF:
             obj = original_caller
         elif obj_name == InterpreterBase.SUPER_DEF:
             if not self.parent:
                 self.interpreter.error(
-                    ErrorType.NAME_ERROR, "Called super on an object that's not inherited", line_num_of_statement)
+                    ErrorType.TYPE_ERROR, "Called super on an object that's not inherited", line_num_of_statement)
             obj = self.parent
+            caller = original_caller
         else:
             obj = self.__evaluate_expression(
                 env, obj_name, line_num_of_statement, original_caller).value()
@@ -398,7 +404,11 @@ class ObjectDef:
         for expr in code[3:]:
             actual_args.append(
                 self.__evaluate_expression(env, expr, line_num_of_statement, original_caller))
-        return obj.call_method(code[2], actual_args, line_num_of_statement, None)
+        if caller:
+            print(f"CALL AUX {caller.class_def.name}")
+        else:
+            print(f"CALL AUX {caller}")
+        return obj.call_method(code[2], actual_args, line_num_of_statement, caller)
 
     def __get_default_return(self, return_type):
         # returns a default value object of the function's return type

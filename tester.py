@@ -206,7 +206,13 @@ def generate_test_suite_v2():
             "test_return_me",
             "test_let_set",
             "test_overload",
-            "test_inher"
+            "test_inher",
+            "test_ruining",
+            "test_1b_return_me",
+            "test_cmpwr552",
+            "test_super_me",
+            "test_more_me",
+            "test_real_while"
         ],
         [
             "test_incompat_return1",
@@ -226,7 +232,11 @@ def generate_test_suite_v2():
             "test_invalid_fields",
             "test_return_types",
             "kyle",
-            "test_ret_type"
+            "test_ret_type",
+            # "kyle2",
+            "test_base_super",
+            "test_cmpwr445",
+            "test_cmpwr450",
         ],
     )
 

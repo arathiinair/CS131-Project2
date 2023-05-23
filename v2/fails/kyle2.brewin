@@ -1,0 +1,18 @@
+(class a
+  (method void bar ()
+    (call me foo)
+  )
+  #(method void foo ()
+   # (print "UMMM")
+  #)
+)
+(class b inherits a
+  (method void foo ()
+    (print "ehrm")
+  )
+)
+(class main
+  (method void main ()
+  (call (new b) bar)
+  )
+)
